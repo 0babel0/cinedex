@@ -10,12 +10,13 @@ import * as addView from './views/add.js';
 import { setSearchQuery } from './views/add.js';
 import * as listView from './views/list.js';
 import * as statsView from './views/stats.js';
+import * as watchlistView from './views/watchlist.js';
 import * as settingsView from './views/settings.js';
 import * as itemView from './views/item.js';
 import * as personView from './views/person.js';
 import { trackHistory } from './nav.js';
 
-const TABS = { add: addView, list: listView, stats: statsView };
+const TABS = { add: addView, list: listView, watchlist: watchlistView, stats: statsView };
 const ROUTES = { ...TABS, settings: settingsView, item: itemView, person: personView };
 const HOME = 'list';
 

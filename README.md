@@ -27,7 +27,8 @@ A small, private, offline-first diary for the movies and TV shows you watch.
   Open an entry to edit it (changes are saved automatically), log a rewatch or delete it.
 - **People**: tap a director, creator or actor to see their filmography. It comes from the person's
   TMDB credits (by id), so a namesake title never shows up.
-- **Stats & Watchlist**: your watchlist as a checklist (tick a title once watched, with undo); counts, hours of movies,
+- **Watchlist**: titles to watch as a checklist (tick a title once watched, with undo).
+- **Stats**: counts, hours of movies,
   average rating, rating distribution, top genres, viewings per month and per year.
 - **Backup**: export to JSON (complete) or CSV (simplified), sent through the Android share sheet
   (Drive, Nextcloud, email…) when available; import a JSON export (merge).
