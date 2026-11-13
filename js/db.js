@@ -65,3 +65,23 @@ export async function entries(storeName) {
   const [keys, values] = await Promise.all([promisify(s.getAllKeys()), promisify(s.getAll())]);
   return Object.fromEntries(keys.map((k, i) => [k, values[i]]));
 }
+
+export async function keys(storeName) {
+  return promisify((await store(storeName)).getAllKeys());
+}
+
+/** Writes several stores in one atomic transaction. ops: [{ store, value, key? }]. */
+export async function putMany(ops) {
+  const db = await openDB();
+  const names = [...new Set(ops.map((o) => o.store))];
+  const tx = db.transaction(names, 'readwrite');
+  for (const { store: name, value, key } of ops) {
+    const s = tx.objectStore(name);
+    if (key === undefined) s.put(value); else s.put(value, key);
+  }
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error || new Error('Transaction aborted'));
+  });
+}
