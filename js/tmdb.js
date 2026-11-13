@@ -120,6 +120,19 @@ export async function getDetails(type, tmdbId, { language, signal } = {}) {
   };
 }
 
+/** IMDb id (tt…) → { type, tmdbId } or null. */
+export async function findByImdb(imdbId) {
+  const data = await tmdbFetch(`/find/${encodeURIComponent(imdbId)}`, { external_source: 'imdb_id' });
+  const movie = data.movie_results?.[0];
+  if (movie) return { type: 'movie', tmdbId: movie.id };
+  const tv = data.tv_results?.[0];
+  if (tv) return { type: 'tv', tmdbId: tv.id };
+  // An episode link: open its show.
+  const ep = data.tv_episode_results?.[0] || data.tv_season_results?.[0];
+  if (ep?.show_id) return { type: 'tv', tmdbId: ep.show_id };
+  return null;
+}
+
 export function posterUrl(path, size = 'w342') {
   return path ? `${IMG}/${size}${path}` : null;
 }

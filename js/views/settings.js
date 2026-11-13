@@ -1,8 +1,10 @@
-import { t, LANGS } from '../i18n.js';
+import { t, LANGS, lang } from '../i18n.js';
 import { getSetting, setSetting } from '../settings.js';
 import { keyType, testKey } from '../tmdb.js';
 import { h, segmented, toast, formatBytes, isStandalone } from '../ui.js';
 import { APP_VERSION } from '../version.js';
+import { exportJson, exportCsv, shareOrDownload, markExported, importJson } from '../backup.js';
+import { fetchMissingPosters } from '../posters.js';
 
 export function render({ back = 'add' } = {}) {
   return h('section', { class: 'page settings' },
@@ -23,6 +25,7 @@ export function render({ back = 'add' } = {}) {
         { value: 'dark', label: t('settings.themeDark') },
       ], getSetting('theme'), (v) => setSetting('theme', v)),
     ),
+    backupSection(),
     storageSection(),
     aboutSection(),
   );
@@ -143,4 +146,85 @@ function aboutSection() {
     h('p', { class: 'small', text: 'This product uses the TMDB API but is not endorsed or certified by TMDB.' }),
     h('p', { class: 'muted small', text: t('settings.version', { v: APP_VERSION }) }),
   );
+}
+
+function backupSection() {
+  const lastText = h('p', { class: 'muted small' });
+  const syncLast = () => {
+    const at = getSetting('lastExportAt');
+    lastText.textContent = at ? t('backup.lastExport', { date: formatDateTime(at) }) : t('backup.neverExported');
+  };
+  syncLast();
+
+  const exportBtn = (label, make) => {
+    const btn = h('button', { type: 'button', class: 'btn', text: label });
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      try {
+        const file = await make();
+        const outcome = await shareOrDownload(file);
+        if (outcome !== 'cancelled') {
+          await markExported();
+          syncLast();
+          toast(t('backup.exported', { name: file.name }));
+        }
+      } catch (err) {
+        console.error(err);
+        toast(t('backup.exportError'));
+      } finally {
+        btn.disabled = false;
+      }
+    });
+    return btn;
+  };
+
+  const fileInput = h('input', { type: 'file', accept: '.json,application/json', hidden: true });
+  const importBtn = h('button', { type: 'button', class: 'btn', text: t('backup.import') });
+  importBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = '';
+    if (!file) return;
+    importBtn.disabled = true;
+    try {
+      const r = await importJson(file);
+      let msg = t('backup.imported', r);
+      if (r.invalid) msg += ' ' + t('backup.invalidItems', { n: r.invalid });
+      toast(msg, { duration: 6000 });
+      downloadPosters();
+    } catch (err) {
+      console.error(err);
+      toast(t(err.kind === 'newer' ? 'backup.importNewer' : 'backup.importError'), { duration: 6000 });
+    } finally {
+      importBtn.disabled = false;
+    }
+  });
+
+  return h('section', { class: 'card' },
+    h('h2', { text: t('backup.title') }),
+    h('p', { class: 'muted', text: t('backup.help') }),
+    h('div', { class: 'row wrap' },
+      exportBtn(t('backup.exportJson'), exportJson),
+      exportBtn(t('backup.exportCsv'), exportCsv)),
+    lastText,
+    h('div', { class: 'row wrap' }, importBtn, fileInput),
+    h('p', { class: 'muted small', text: t('backup.importHelp') }),
+  );
+}
+
+/** Re-downloads posters after an import, with a progress toast. */
+async function downloadPosters() {
+  let note = null;
+  const fetched = await fetchMissingPosters((done, total) => {
+    const text = t('backup.posters', { done, total });
+    if (!note) note = toast(text, { duration: 0 });
+    else note.querySelector('span').textContent = text;
+  });
+  note?.remove();
+  if (fetched) toast(t('backup.postersDone'));
+}
+
+function formatDateTime(iso) {
+  return new Date(iso).toLocaleString(lang() === 'fr' ? 'fr-FR' : 'en-US',
+    { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }

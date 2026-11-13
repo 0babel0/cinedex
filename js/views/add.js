@@ -13,6 +13,11 @@ const MIN_CHARS = 2;
 // Kept across renders so coming back from a detail sheet restores the search.
 const state = { query: '', results: null, lang: null };
 
+/** Prefills the search (e.g. from a shared text that isn't a TMDB/IMDb link). */
+export function setSearchQuery(query) {
+  Object.assign(state, { query, results: null, lang: null });
+}
+
 export function render(ctx) {
   if (ctx.params.length >= 2) return detail.render(ctx);
   if (!getSetting('tmdbKey')) {
