@@ -59,7 +59,11 @@
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
 
+/* overscroll-behavior: no pull-to-refresh in Chrome (it reloaded the app and replayed the splash). */
+html, body { overscroll-behavior-y: none; }
 html { -webkit-text-size-adjust: 100%; }
+/* Reload within the same session (update, manual refresh): no splash, see boot.js. */
+.no-splash .splash { display: none; }
 
 body {
   margin: 0;
@@ -127,7 +131,7 @@ body[data-route="settings"] #settings-btn { color: var(--accent); }
   position: fixed; inset: auto 0 0 0; z-index: 10;
   height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: grid; grid-template-columns: repeat(4, 1fr);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -572,17 +576,19 @@ body:has(.actions) .toasts { bottom: calc(var(--tabbar-h) + env(safe-area-inset-
   animation: splash-bg 1.2s ease forwards;
 }
 .splash-inner {
-  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  display: flex; flex-direction: column; align-items: center;
   animation: splash-exit 1.2s cubic-bezier(.65, 0, .35, 1) forwards;
 }
 .splash-inner img { animation: splash-logo 1.2s ease forwards; }
 .splash-inner span {
+  margin-top: -12px;
   font-size: 2.6rem; line-height: 1.5; font-weight: 800; letter-spacing: -.02em; color: var(--text);
   animation: splash-title 1.2s ease forwards;
 }
-/* Logo starts centered on screen (half of title height + gap lower), then makes room for the title. */
+/* Logo starts centered on screen (half the title height lower), then makes room for the title.
+   The mark's own padding (same framing as the app icon) spaces it from the title. */
 @keyframes splash-logo {
-  0% { transform: translateY(40px); }
+  0% { transform: translateY(25px); }
   28%, 100% { transform: none; }
 }
 @keyframes splash-title {

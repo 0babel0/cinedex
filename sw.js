@@ -2,7 +2,7 @@
 // TMDB requests (api/image) are never cached here: posters live in IndexedDB.
 // Bump CACHE_VERSION (and APP_VERSION in js/version.js) whenever a shell file changes.
 
-const CACHE_VERSION = 'v1.1.2';
+const CACHE_VERSION = 'v1.2.0';
 const CACHE = `cinedex-shell-${CACHE_VERSION}`;
 
 const SHELL = [
@@ -32,7 +32,9 @@ const SHELL = [
   './js/views/settings.js',
   './js/views/sheet.js',
   './js/views/stats.js',
+  './js/views/watchlist.js',
   './assets/logo.svg',
+  './assets/mark.svg',
   './assets/tmdb.svg',
   './icons/favicon.svg',
   './icons/icon-192.png',
