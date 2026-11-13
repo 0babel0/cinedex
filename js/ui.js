@@ -28,14 +28,14 @@ export function append(parent, ...children) {
   return parent;
 }
 
-/** Shows a transient message. action: { label, onClick } (optional). */
-export function toast(message, { action, duration = 3500 } = {}) {
+/** Shows a transient message. actions: [{ label, onClick }] (or a single `action`). */
+export function toast(message, { action, actions = action ? [action] : [], duration = 3500 } = {}) {
   const host = document.getElementById('toasts');
   const el = h('div', { class: 'toast', role: 'status' }, h('span', { text: message }));
-  if (action) {
+  for (const a of actions) {
     el.append(h('button', {
-      class: 'toast-action', type: 'button', text: action.label,
-      onClick: () => { action.onClick(); el.remove(); },
+      class: 'toast-action', type: 'button', text: a.label,
+      onClick: () => { a.onClick(); el.remove(); },
     }));
   }
   host.append(el);

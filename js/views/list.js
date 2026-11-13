@@ -7,7 +7,6 @@ import { posterUrls } from '../posters.js';
 import { h, append } from '../ui.js';
 import { formatRating } from '../components.js';
 import { formatDate } from './sheet.js';
-import { exportReminder } from './reminder.js';
 
 const SORTS = ['watched', 'rating', 'title', 'year'];
 const DEFAULT_FILTERS = { type: 'all', genre: '', tag: '', minRating: 0 };
@@ -29,8 +28,6 @@ export async function render() {
 
   const page = h('section', { class: 'page list-page' },
     h('h1', { class: 'page-title', text: t('list.title') }));
-  const reminder = exportReminder(all);
-  if (reminder) page.append(reminder);
 
   if (!items.length) {
     page.append(h('div', { class: 'empty' },

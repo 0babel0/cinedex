@@ -1,7 +1,7 @@
 // "Stats & Watchlist" tab. Charts are plain HTML/CSS bars (no library).
 
 import { t, lang } from '../i18n.js';
-import { getAllItems, markWatched } from '../items.js';
+import { getAllItems, markWatched, updateItem } from '../items.js';
 import { posterUrls } from '../posters.js';
 import { h, segmented, toast } from '../ui.js';
 import { formatRating } from '../components.js';
@@ -42,34 +42,47 @@ function watchlistSection(list, posters, rerender) {
       h('p', { text: t('stats.watchlistEmpty') }),
       h('a', { class: 'btn primary', href: '#/add', text: t('nav.add') }));
   }
-  return h('ul', { class: 'results' }, list.map((item) => {
-    const done = h('button', {
-      type: 'button', class: 'btn small primary', text: t('stats.markWatched'),
-      'aria-label': `${t('stats.markWatched')} : ${item.title}`,
+  return h('div', {},
+    h('p', { class: 'muted small hint', text: t('stats.checkHint') }),
+    h('ul', { class: 'results' }, list.map((item) => watchlistRow(item, posters, rerender))));
+}
+
+/** Row with a round checkbox: tick it to mark the title as watched (with undo). */
+function watchlistRow(item, posters, rerender) {
+  const label = t('stats.markWatchedFor', { title: item.title });
+  const check = h('button', {
+    type: 'button', class: 'check', role: 'checkbox', 'aria-checked': 'false', 'aria-label': label, title: label,
+    html: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M7.5 12.5l3 3 6-6.5"/></svg>',
+  });
+  const row = h('li', { class: 'row-item' },
+    check,
+    h('a', { class: 'result', href: `#/item/${encodeURIComponent(item.id)}` },
+      h('span', { class: 'thumb' }, posters.get(item.id)
+        ? h('img', { src: posters.get(item.id), alt: '', loading: 'lazy' })
+        : h('span', { class: 'thumb-empty' })),
+      h('span', { class: 'result-text' },
+        h('span', { class: 'result-title', text: item.title }),
+        h('span', { class: 'result-meta' },
+          h('span', { class: `badge ${item.type}`, text: t(`type.${item.type}`) }),
+          item.year && h('span', { text: item.year })),
+      )),
+  );
+  check.addEventListener('click', async () => {
+    check.disabled = true;
+    check.setAttribute('aria-checked', 'true');
+    row.classList.add('done'); // tick + fade, then the list re-renders
+    const before = { status: item.status, watches: item.watches, seriesStatus: item.seriesStatus };
+    await Promise.all([markWatched(item), new Promise((r) => setTimeout(r, 450))]);
+    rerender('watchlist');
+    toast(t('stats.markedWatched', { title: item.title }), {
+      duration: 6000,
+      actions: [
+        { label: t('stats.undo'), onClick: async () => { await updateItem(item.id, before); rerender('watchlist'); } },
+        { label: t('stats.rate'), onClick: () => { location.hash = `#/item/${encodeURIComponent(item.id)}`; } },
+      ],
     });
-    done.addEventListener('click', async () => {
-      done.disabled = true;
-      await markWatched(item);
-      toast(t('stats.markedWatched', { title: item.title }), {
-        action: { label: t('stats.rate'), onClick: () => { location.hash = `#/item/${encodeURIComponent(item.id)}`; } },
-        duration: 5000,
-      });
-      rerender('watchlist');
-    });
-    return h('li', { class: 'row-item' },
-      h('a', { class: 'result', href: `#/item/${encodeURIComponent(item.id)}` },
-        h('span', { class: 'thumb' }, posters.get(item.id)
-          ? h('img', { src: posters.get(item.id), alt: '', loading: 'lazy' })
-          : h('span', { class: 'thumb-empty' })),
-        h('span', { class: 'result-text' },
-          h('span', { class: 'result-title', text: item.title }),
-          h('span', { class: 'result-meta' },
-            h('span', { class: `badge ${item.type}`, text: t(`type.${item.type}`) }),
-            item.year && h('span', { text: item.year })),
-        )),
-      done,
-    );
-  }));
+  });
+  return row;
 }
 
 // ---------- Stats ----------
