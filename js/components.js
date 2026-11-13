@@ -84,7 +84,7 @@ export function ratingInput(initial = null, onChange = () => {}) {
  * Free tags as chips. Enter / comma adds, Backspace on empty input removes the last one.
  * Suggestions come from `known` (existing tags), shown as tappable chips while typing.
  */
-export function tagInput(initial = [], known = []) {
+export function tagInput(initial = [], known = [], onChange = () => {}) {
   let tags = [...initial];
   const list = h('div', { class: 'chips' });
   const input = h('input', {
@@ -100,7 +100,7 @@ export function tagInput(initial = [], known = []) {
     list.replaceChildren(...tags.map((tag) => h('button', {
       type: 'button', class: 'chip removable', 'aria-label': `${t('form.removeTag')} ${tag}`,
       onPointerdown: keepFocus,
-      onClick: () => { tags = tags.filter((x) => x !== tag); renderChips(); input.focus(); },
+      onClick: () => { tags = tags.filter((x) => x !== tag); renderChips(); onChange([...tags]); input.focus(); },
     }, tag, h('span', { 'aria-hidden': 'true', text: '×' }))), input);
     renderSuggestions();
   };
@@ -121,9 +121,11 @@ export function tagInput(initial = [], known = []) {
 
   const add = (raw) => {
     const tag = normalizeTag(raw, known);
-    if (tag && !tags.some((x) => x.toLowerCase() === tag.toLowerCase())) tags.push(tag);
+    const isNew = tag && !tags.some((x) => x.toLowerCase() === tag.toLowerCase());
+    if (isNew) tags.push(tag);
     input.value = '';
     renderChips();
+    if (isNew) onChange([...tags]);
   };
 
   input.addEventListener('keydown', (e) => {
@@ -133,6 +135,7 @@ export function tagInput(initial = [], known = []) {
     } else if (e.key === 'Backspace' && !input.value && tags.length) {
       tags.pop();
       renderChips();
+      onChange([...tags]);
     }
   });
   // Android keyboards often don't send a usable keydown for ",": catch it on input too.
