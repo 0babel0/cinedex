@@ -20,7 +20,51 @@ const STRINGS = {
     'add.needKey': 'Pour rechercher des films et séries, ajoute d’abord ta clé TMDB.',
     'add.goSettings': 'Configurer la clé',
     'add.searchPlaceholder': 'Rechercher un film, une série…',
-    'add.soon': 'La recherche arrive à l’étape 2.',
+    'add.hint': 'Tape au moins 2 lettres : titre français ou original.',
+    'add.noResults': 'Aucun film ni série trouvé.',
+    'add.inList': 'Dans ta liste',
+
+    'type.movie': 'Film',
+    'type.tv': 'Série',
+
+    'detail.director': 'Réalisation :',
+    'detail.creators': 'Création :',
+    'detail.cast': 'Avec :',
+    'detail.noOverview': 'Pas de synopsis disponible.',
+    'detail.season': '{n} saison',
+    'detail.seasons': '{n} saisons',
+    'detail.watched': 'Vu',
+    'detail.watchlist': 'À voir',
+    'detail.retry': 'Réessayer',
+    'detail.alreadyWatched': 'Déjà dans ta liste : vu {n} fois, dernière fois le {date}. « Vu » ajoute un revisionnage.',
+    'detail.alreadyWatchlist': 'Déjà dans ta liste « À voir ».',
+    'detail.savedWatched': '« {title} » ajouté à ta liste.',
+    'detail.savedWatchlist': '« {title} » ajouté à « À voir ».',
+    'detail.updated': '« {title} » mis à jour.',
+    'detail.saveError': 'Échec de l’enregistrement.',
+
+    'form.yourTake': 'Ton avis',
+    'form.rating': 'Note',
+    'form.clear': 'Effacer',
+    'form.watchDate': 'Vu le',
+    'form.rewatchDate': 'Revu le',
+    'form.notes': 'Notes',
+    'form.notesPlaceholder': 'Ce que tu en as pensé, avec qui, où…',
+    'form.tags': 'Tags',
+    'form.tagsPlaceholder': 'Ajouter un tag…',
+    'form.removeTag': 'Retirer',
+    'form.seriesStatus': 'Statut',
+    'form.lastSeason': 'Dernière saison vue',
+    'form.ofSeasons': 'sur {n}',
+
+    'series.watching': 'En cours',
+    'series.finished': 'Terminée',
+    'series.dropped': 'Abandonnée',
+
+    'err.offline': 'Pas de connexion. La recherche nécessite le réseau.',
+    'err.badkey': 'Clé TMDB refusée. Vérifie-la dans les paramètres.',
+    'err.notfound': 'Introuvable sur TMDB.',
+    'err.http': 'Erreur TMDB ({status}). Réessaie plus tard.',
 
     'list.title': 'Ma liste',
     'list.empty': 'Rien ici pour l’instant. Ajoute ton premier film !',
@@ -81,7 +125,51 @@ const STRINGS = {
     'add.needKey': 'To search movies and TV shows, first add your TMDB key.',
     'add.goSettings': 'Set up key',
     'add.searchPlaceholder': 'Search a movie, a TV show…',
-    'add.soon': 'Search arrives in step 2.',
+    'add.hint': 'Type at least 2 letters: local or original title.',
+    'add.noResults': 'No movie or TV show found.',
+    'add.inList': 'In your list',
+
+    'type.movie': 'Movie',
+    'type.tv': 'TV show',
+
+    'detail.director': 'Directed by',
+    'detail.creators': 'Created by',
+    'detail.cast': 'Starring',
+    'detail.noOverview': 'No synopsis available.',
+    'detail.season': '{n} season',
+    'detail.seasons': '{n} seasons',
+    'detail.watched': 'Watched',
+    'detail.watchlist': 'Watchlist',
+    'detail.retry': 'Retry',
+    'detail.alreadyWatched': 'Already in your list: watched {n}×, last on {date}. “Watched” adds a rewatch.',
+    'detail.alreadyWatchlist': 'Already in your watchlist.',
+    'detail.savedWatched': '“{title}” added to your list.',
+    'detail.savedWatchlist': '“{title}” added to your watchlist.',
+    'detail.updated': '“{title}” updated.',
+    'detail.saveError': 'Saving failed.',
+
+    'form.yourTake': 'Your take',
+    'form.rating': 'Rating',
+    'form.clear': 'Clear',
+    'form.watchDate': 'Watched on',
+    'form.rewatchDate': 'Rewatched on',
+    'form.notes': 'Notes',
+    'form.notesPlaceholder': 'What you thought, who with, where…',
+    'form.tags': 'Tags',
+    'form.tagsPlaceholder': 'Add a tag…',
+    'form.removeTag': 'Remove',
+    'form.seriesStatus': 'Status',
+    'form.lastSeason': 'Last season watched',
+    'form.ofSeasons': 'of {n}',
+
+    'series.watching': 'Watching',
+    'series.finished': 'Finished',
+    'series.dropped': 'Dropped',
+
+    'err.offline': 'No connection. Search needs the network.',
+    'err.badkey': 'TMDB key rejected. Check it in settings.',
+    'err.notfound': 'Not found on TMDB.',
+    'err.http': 'TMDB error ({status}). Try again later.',
 
     'list.title': 'My list',
     'list.empty': 'Nothing here yet. Add your first movie!',
@@ -157,4 +245,15 @@ export function applyI18n(root = document) {
     el.placeholder = t(el.dataset.i18nPlaceholder);
   });
   document.documentElement.lang = lang();
+}
+
+/** User-facing message for a TmdbError. */
+export function errorText(err) {
+  switch (err?.kind) {
+    case 'offline': return t('err.offline');
+    case 'badkey': return t('err.badkey');
+    case 'nokey': return t('add.needKey');
+    case 'notfound': return t('err.notfound');
+    default: return t('err.http', { status: err?.status ?? '?' });
+  }
 }
