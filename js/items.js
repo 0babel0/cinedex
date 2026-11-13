@@ -88,3 +88,31 @@ export function normalizeTag(raw, known = []) {
   if (!tag) return '';
   return known.find((k) => k.toLowerCase() === tag.toLowerCase()) || tag;
 }
+
+/** Merges a patch into an existing entry and bumps updatedAt. */
+export async function updateItem(id, patch) {
+  const existing = await getItem(id);
+  if (!existing) throw new Error(`No item ${id}`);
+  const item = { ...existing, ...patch, id, updatedAt: new Date().toISOString() };
+  item.watches = [...new Set(item.watches || [])].sort();
+  await db.put('items', item);
+  return item;
+}
+
+export async function deleteItem(id) {
+  await db.delMany([{ store: 'items', key: id }, { store: 'posters', key: id }]);
+}
+
+/** Watchlist → watched, with a watch date (default: today). */
+export function markWatched(item, date = today()) {
+  return updateItem(item.id, {
+    status: 'watched',
+    watches: [...(item.watches || []), date],
+    seriesStatus: item.type === 'tv' ? item.seriesStatus || 'watching' : null,
+  });
+}
+
+/** Most recent watch date (YYYY-MM-DD) or null. */
+export function lastWatch(item) {
+  return item.watches?.length ? item.watches[item.watches.length - 1] : null;
+}

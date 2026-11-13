@@ -85,3 +85,15 @@ export async function putMany(ops) {
     tx.onabort = () => reject(tx.error || new Error('Transaction aborted'));
   });
 }
+
+/** Deletes keys from several stores in one transaction. ops: [{ store, key }]. */
+export async function delMany(ops) {
+  const db = await openDB();
+  const tx = db.transaction([...new Set(ops.map((o) => o.store))], 'readwrite');
+  for (const { store: name, key } of ops) tx.objectStore(name).delete(key);
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error || new Error('Transaction aborted'));
+  });
+}

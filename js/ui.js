@@ -16,11 +16,16 @@ export function h(tag, attrs = {}, ...children) {
     else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2).toLowerCase(), v);
     else el.setAttribute(k, v === true ? '' : v);
   }
-  for (const c of children.flat()) {
+  return append(el, ...children);
+}
+
+/** Appends children like h() does: arrays flattened, null/undefined/false skipped. */
+export function append(parent, ...children) {
+  for (const c of children.flat(Infinity)) {
     if (c === null || c === undefined || c === false) continue;
-    el.append(c instanceof Node ? c : String(c));
+    parent.append(c instanceof Node ? c : String(c));
   }
-  return el;
+  return parent;
 }
 
 /** Shows a transient message. action: { label, onClick } (optional). */
@@ -62,4 +67,24 @@ export function formatBytes(n) {
 /** True when running as an installed app (home screen / app drawer), not in a browser tab. */
 export function isStandalone() {
   return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+}
+
+/** Modal confirmation built on <dialog>. Resolves to true when confirmed. */
+export function confirmDialog(message, { confirmLabel = 'OK', cancelLabel = 'Cancel', danger = false } = {}) {
+  return new Promise((resolve) => {
+    const dialog = h('dialog', { class: 'dialog' },
+      h('form', { method: 'dialog' },
+        h('p', { text: message }),
+        h('div', { class: 'row end' },
+          h('button', { class: 'btn ghost', value: 'cancel', text: cancelLabel }),
+          h('button', { class: `btn ${danger ? 'danger' : 'primary'}`, value: 'ok', text: confirmLabel }),
+        ),
+      ));
+    dialog.addEventListener('close', () => {
+      resolve(dialog.returnValue === 'ok');
+      dialog.remove();
+    });
+    document.body.append(dialog);
+    dialog.showModal();
+  });
 }
