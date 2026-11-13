@@ -21,7 +21,7 @@ const STRINGS = {
     'add.needKey': 'Pour rechercher des films et séries, ajoute d’abord ta clé TMDB.',
     'add.goSettings': 'Configurer la clé',
     'add.searchPlaceholder': 'Rechercher un film, une série…',
-    'add.hint': 'Tape au moins 2 lettres : titre français ou original.',
+    'add.hint': 'Cherchez un titre, en français ou en version originale.',
     'add.noResults': 'Aucun film ni série trouvé.',
     'add.inList': 'Dans ta liste',
 
@@ -234,7 +234,7 @@ const STRINGS = {
     'add.needKey': 'To search movies and TV shows, first add your TMDB key.',
     'add.goSettings': 'Set up key',
     'add.searchPlaceholder': 'Search a movie, a TV show…',
-    'add.hint': 'Type at least 2 letters: local or original title.',
+    'add.hint': 'Search by local or original title.',
     'add.noResults': 'No movie or TV show found.',
     'add.inList': 'In your list',
 
