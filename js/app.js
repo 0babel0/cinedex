@@ -14,21 +14,24 @@ const ROUTES = { ...TABS, settings: settingsView };
 
 const viewEl = document.getElementById('view');
 let lastTab = 'add';
-let currentRoute = null;
+let currentPath = null;
 
+/** "#/add/movie/603" → { route: 'add', params: ['movie', '603'], path: 'add/movie/603' } */
 function parseRoute() {
-  const name = location.hash.replace(/^#\/?/, '').split(/[/?]/)[0];
-  return ROUTES[name] ? name : 'add';
+  const path = location.hash.replace(/^#\/?/, '').split('?')[0];
+  const [name, ...params] = path.split('/').filter(Boolean).map(decodeURIComponent);
+  const route = ROUTES[name] ? name : 'add';
+  return { route, params: ROUTES[name] ? params : [], path: [route, ...params].join('/') };
 }
 
 async function renderRoute({ force = false } = {}) {
-  const route = parseRoute();
-  if (route === currentRoute && !force) return;
-  const changed = route !== currentRoute;
-  currentRoute = route;
+  const { route, params, path } = parseRoute();
+  if (path === currentPath && !force) return;
+  const changed = path !== currentPath;
+  currentPath = path;
   if (TABS[route]) lastTab = route;
 
-  const node = await ROUTES[route].render({ back: lastTab });
+  const node = await ROUTES[route].render({ back: lastTab, params });
   viewEl.replaceChildren(node);
   document.body.dataset.route = route;
   if (changed) {
