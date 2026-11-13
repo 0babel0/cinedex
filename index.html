@@ -19,6 +19,14 @@
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
+  <!-- Cold-start splash: pure CSS, never blocks input (pointer-events: none), removed by app.js. -->
+  <div class="splash" id="splash" aria-hidden="true">
+    <div class="splash-inner">
+      <img src="assets/logo.svg" alt="" width="104" height="104">
+      <span>Cinedex</span>
+    </div>
+  </div>
+
   <header class="topbar">
     <a class="brand" href="#/add" aria-label="Cinedex">
       <img src="icons/favicon.svg" alt="" width="28" height="28">

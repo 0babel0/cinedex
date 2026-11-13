@@ -121,7 +121,16 @@ function registerServiceWorker() {
   });
 }
 
+function dismissSplash() {
+  const splash = document.getElementById('splash');
+  if (!splash) return;
+  const remove = () => splash.remove();
+  splash.addEventListener('animationend', (e) => { if (e.target === splash) remove(); });
+  setTimeout(remove, 2000); // safety net (e.g. animations disabled)
+}
+
 async function start() {
+  dismissSplash();
   try {
     await openDB();
     await loadSettings();

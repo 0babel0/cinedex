@@ -28,7 +28,10 @@ export function ratingInput(initial = null, onChange = () => {}) {
     'aria-label': t('form.rating'), 'aria-valuemin': '0', 'aria-valuemax': '5',
   }, starsSvg('stars-base'), fill);
   const label = h('span', { class: 'rating-value' });
-  const clear = h('button', { type: 'button', class: 'btn ghost small', text: t('form.clear') });
+  const clear = h('button', {
+    type: 'button', class: 'icon-btn small', 'aria-label': t('form.clear'), title: t('form.clear'),
+    html: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  });
 
   const set = (v, notify = true) => {
     value = v === null ? null : Math.min(5, Math.max(0.5, Math.round(v * 2) / 2));

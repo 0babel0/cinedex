@@ -331,7 +331,8 @@ input[type="date"].field { max-width: 220px; }
 .actions .btn { flex: 1; max-width: 200px; }
 
 /* Rating */
-.rating { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.rating { display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; }
+.rating .icon-btn { color: var(--muted); }
 .stars {
   position: relative; display: inline-block; cursor: pointer;
   touch-action: pan-y; user-select: none; -webkit-user-select: none;
@@ -340,7 +341,7 @@ input[type="date"].field { max-width: 220px; }
 .stars:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 .stars-base, .stars-fill { display: flex; }
 .stars-fill { position: absolute; inset: 2px auto 2px 0; overflow: hidden; width: 0; }
-.stars svg { flex: none; width: 40px; height: 40px; padding: 0 2px; }
+.stars svg { flex: none; width: 38px; height: 38px; padding: 0 2px; }
 .stars-base svg { fill: none; stroke: var(--muted); stroke-width: 1.4; stroke-linejoin: round; opacity: .6; }
 .stars-fill svg { fill: var(--accent); stroke: var(--accent); stroke-width: 1.4; stroke-linejoin: round; }
 .rating-value { font-weight: 700; min-width: 4.5ch; font-variant-numeric: tabular-nums; }
@@ -486,14 +487,14 @@ select.field {
 .columns { display: flex; align-items: stretch; gap: 6px; height: 150px; }
 .columns.thin { gap: 2px; }
 .col { flex: 1; min-width: 0; display: grid; grid-template-rows: auto 1fr auto; gap: 4px; text-align: center; }
-.col-value { font-size: .7rem; color: var(--muted); min-height: 1em; font-variant-numeric: tabular-nums; }
+.col-value { font-size: .7rem; line-height: 1.2; height: 1.2em; color: var(--muted); font-variant-numeric: tabular-nums; }
 .col-track { display: flex; align-items: flex-end; border-bottom: 1px solid var(--border); }
 .col-bar {
   display: block; width: 100%; min-height: 0; border-radius: 4px 4px 0 0;
   background: linear-gradient(to top, color-mix(in srgb, var(--accent) 70%, transparent), var(--accent));
   transition: height .4s ease;
 }
-.col-label { font-size: .7rem; color: var(--muted); white-space: nowrap; overflow: visible; min-height: 1em; }
+.col-label { font-size: .7rem; line-height: 1.2; height: 1.2em; color: var(--muted); white-space: nowrap; overflow: visible; }
 .columns.thin .col-label { font-size: .62rem; }
 
 .hbars { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -529,8 +530,42 @@ select.field {
 body:has(.actions) .toasts { bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 92px); }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
 
+/* ---------- Splash (cold start) ---------- */
+.splash {
+  position: fixed; inset: 0; z-index: 100;
+  display: grid; place-items: center;
+  background: var(--bg);
+  pointer-events: none;
+  animation: splash-bg 1.15s ease forwards;
+}
+.splash-inner {
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  animation: splash-content 1.15s cubic-bezier(.65, 0, .35, 1) forwards;
+}
+.splash-inner img { border-radius: 24px; box-shadow: 0 12px 40px rgb(244 183 64 / .18); }
+.splash-inner span { font-size: 2.6rem; font-weight: 800; letter-spacing: -.02em; color: var(--text); }
+@keyframes splash-content {
+  0% { opacity: 0; transform: scale(.94); }
+  30% { opacity: 1; transform: none; }
+  58% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateX(-55vw); }
+}
+@keyframes splash-bg {
+  0%, 62% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+@keyframes splash-fade {
+  0%, 40% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Splash: a short plain fade instead of the slide (overrides the global rule above). */
+  .splash { animation-name: splash-fade !important; animation-duration: .5s !important; }
+  .splash-inner { animation: none !important; }
 }
 
 @media (min-width: 768px) {
