@@ -147,10 +147,17 @@ export function posterUrl(path, size = 'w342') {
   return path ? `${IMG}/${size}${path}` : null;
 }
 
-/** Downloads a poster as a Blob (stored in IndexedDB so lists never hit the network). */
+/**
+ * Downloads a poster as a Blob (stored in IndexedDB so lists never hit the network).
+ * cache: 'reload' matters: image.tmdb.org only sends CORS headers when the request has an
+ * Origin, without "Vary: Origin". A copy cached earlier by a plain <img> (no CORS headers)
+ * would make this CORS fetch fail in Chrome, and the poster would never be stored.
+ */
 export async function fetchPoster(path, { size = 'w342', signal } = {}) {
   if (!path) return null;
-  const res = await fetch(posterUrl(path, size), { signal, referrerPolicy: 'no-referrer', credentials: 'omit' });
+  const res = await fetch(posterUrl(path, size), {
+    signal, cache: 'reload', mode: 'cors', referrerPolicy: 'no-referrer', credentials: 'omit',
+  });
   if (!res.ok) throw new TmdbError('http', res.status);
   return res.blob();
 }

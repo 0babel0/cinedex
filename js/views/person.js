@@ -53,7 +53,7 @@ function content(person, mine) {
   return [
     h('div', { class: 'detail-hero' },
       person.profilePath
-        ? h('img', { class: 'poster', src: posterUrl(person.profilePath, 'w185'), alt: '', width: 185, height: 278 })
+        ? h('img', { class: 'poster', src: posterUrl(person.profilePath, 'w185'), crossorigin: 'anonymous', alt: '', width: 185, height: 278 })
         : h('div', { class: 'poster poster-empty', 'aria-hidden': 'true' }),
       h('div', { class: 'detail-titles' },
         h('h1', { class: 'detail-title', text: person.name }),
@@ -73,7 +73,7 @@ function creditRow(c, inList) {
   return h('li', {},
     h('a', { class: 'result', href: `#/add/${c.type}/${c.tmdbId}` },
       h('span', { class: 'thumb' }, c.posterPath
-        ? h('img', { src: posterUrl(c.posterPath, 'w92'), alt: '', loading: 'lazy', width: 46, height: 69 })
+        ? h('img', { src: posterUrl(c.posterPath, 'w92'), crossorigin: 'anonymous', alt: '', loading: 'lazy', width: 46, height: 69 })
         : h('span', { class: 'thumb-empty' })),
       h('span', { class: 'result-text' },
         h('span', { class: 'result-title', text: c.title }),

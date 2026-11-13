@@ -101,7 +101,7 @@ export function render(ctx) {
 
 function resultRow(r, inList) {
   const thumb = r.posterPath
-    ? h('img', { src: posterUrl(r.posterPath, 'w92'), alt: '', loading: 'lazy', width: 46, height: 69 })
+    ? h('img', { src: posterUrl(r.posterPath, 'w92'), crossorigin: 'anonymous', alt: '', loading: 'lazy', width: 46, height: 69 })
     : h('span', { class: 'thumb-empty', 'aria-hidden': 'true' });
   const showOriginal = r.originalTitle && r.originalTitle !== r.title;
   return h('li', {},

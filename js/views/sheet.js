@@ -28,7 +28,7 @@ export function header(meta, posterSrc) {
     backdrop,
     h('div', { class: 'detail-hero' },
       posterSrc
-        ? h('img', { class: 'poster', src: posterSrc, alt: '', width: 342, height: 513 })
+        ? h('img', { class: 'poster', src: posterSrc, crossorigin: 'anonymous', alt: '', width: 342, height: 513 })
         : h('div', { class: 'poster poster-empty', 'aria-hidden': 'true' }),
       h('div', { class: 'detail-titles' },
         h('h1', { class: 'detail-title', text: meta.title }),
