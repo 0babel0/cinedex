@@ -18,20 +18,24 @@ A small, private, offline-first diary for the movies and TV shows you watch.
 ## Features
 
 - **Add**: search movies and TV shows as you type (TMDB `search/multi`), open a detail sheet
-  (poster, localized and original title, year, runtime or seasons, genres, director or creators,
-  main cast, synopsis with English fallback), then save it as **Watched** or **Watchlist**
+  (poster, localized and original title, year, runtime or seasons, TMDB community score, genres,
+  director or creators, main cast, synopsis with English fallback), then save it as **Watched** or **Watchlist**
   with a half-star rating, notes, free tags and a watch date. TV shows get a light progress
   tracker: status (watching / finished / dropped) and last season watched.
-- **My list**: poster grid or compact list, text search (local title, original title, notes),
+- **My list** (home screen): poster grid or compact list, text search (local title, original title, notes),
   sort (watch date, rating, title, release year) and filters (type, genre, tag, minimum rating).
-  Open an entry to edit it, log a rewatch or delete it.
-- **Stats & Watchlist**: your watchlist with a one-tap "watched" button; counts, hours of movies,
+  Open an entry to edit it (changes are saved automatically), log a rewatch or delete it.
+- **People**: tap a director, creator or actor to see their filmography. It comes from the person's
+  TMDB credits (by id), so a namesake title never shows up.
+- **Stats & Watchlist**: your watchlist as a checklist (tick a title once watched, with undo); counts, hours of movies,
   average rating, rating distribution, top genres, viewings per month and per year.
 - **Backup**: export to JSON (complete) or CSV (simplified), sent through the Android share sheet
   (Drive, Nextcloud, email…) when available; import a JSON export (merge).
-  A discreet reminder appears when the last export is more than 30 days old.
-- **Share to Cinedex** (Android, installed app): share a TMDB or IMDb link to Cinedex to open
-  its detail sheet directly.
+- **Share a title**: the share button on any sheet sends a link to that title. Recipients who use
+  Cinedex get the full sheet (in the installed app when their browser opens links in it); others
+  get a preview card with the poster and a link to TMDB.
+- **Share to Cinedex** (Android, app installed from Chrome): share a TMDB or IMDb link to Cinedex
+  to open its detail sheet directly.
 
 Posters are downloaded once (`w342`) when you add a title and stored in IndexedDB:
 browsing your list never hits the network.
@@ -133,8 +137,8 @@ Code map:
 | `js/app.js` | startup, hash router, service worker registration |
 | `js/db.js`, `js/items.js`, `js/posters.js` | IndexedDB, entries, poster Blobs |
 | `js/tmdb.js` | TMDB client (v3 key or v4 token) |
-| `js/backup.js`, `js/share.js` | export / import, share target |
-| `js/views/` | Add, detail sheet, My list, entry editor, Stats, Settings |
+| `js/backup.js`, `js/share.js` | export / import, title links and share target |
+| `js/views/` | Add, detail sheet, My list, entry editor, person page, Stats, Settings |
 | `sw.js` | offline app shell |
 
 ### Deploy your own copy
