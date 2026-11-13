@@ -3,7 +3,7 @@
 import { openDB } from './db.js';
 import { loadSettings, getSetting, setSetting, onSettingChange } from './settings.js';
 import { applyI18n, t } from './i18n.js';
-import { toast } from './ui.js';
+import { toast, isStandalone } from './ui.js';
 import * as addView from './views/add.js';
 import * as listView from './views/list.js';
 import * as statsView from './views/stats.js';
@@ -64,13 +64,22 @@ function watchConnectivity() {
   update();
 }
 
-/** Ask once for persistent storage so the browser doesn't evict the diary. */
+/**
+ * Ask for persistent storage so the browser doesn't evict the diary.
+ * Chrome grants it silently from heuristics (installed app, engagement), so a refusal
+ * in the browser tab is common: retry on each launch of the installed app and right
+ * after installation. In a plain tab, ask only once (Firefox shows a prompt).
+ */
 async function requestPersistence() {
-  if (getSetting('persistAsked') || !navigator.storage?.persist) return;
+  if (!navigator.storage?.persist) return;
   try {
+    if (await navigator.storage.persisted()) return;
+    if (getSetting('persistAsked') && !isStandalone()) return;
     await navigator.storage.persist();
+  } catch (err) {
+    console.warn('storage.persist failed', err);
   } finally {
-    await setSetting('persistAsked', true);
+    if (!getSetting('persistAsked')) await setSetting('persistAsked', true);
   }
 }
 
@@ -123,6 +132,7 @@ async function start() {
 
   watchConnectivity();
   requestPersistence();
+  window.addEventListener('appinstalled', () => setTimeout(requestPersistence, 1000));
   registerServiceWorker();
 }
 

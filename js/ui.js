@@ -58,3 +58,8 @@ export function formatBytes(n) {
   while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
   return `${n.toFixed(i ? 1 : 0)} ${units[i]}`;
 }
+
+/** True when running as an installed app (home screen / app drawer), not in a browser tab. */
+export function isStandalone() {
+  return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+}

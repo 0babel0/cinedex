@@ -1,7 +1,7 @@
 import { t, LANGS } from '../i18n.js';
 import { getSetting, setSetting } from '../settings.js';
 import { keyType, testKey } from '../tmdb.js';
-import { h, segmented, toast, formatBytes } from '../ui.js';
+import { h, segmented, toast, formatBytes, isStandalone } from '../ui.js';
 import { APP_VERSION } from '../version.js';
 
 export function render({ back = 'add' } = {}) {
@@ -108,19 +108,30 @@ function keySection() {
 }
 
 function storageSection() {
+  const mode = h('p', { class: 'small', text: t(isStandalone() ? 'settings.modeApp' : 'settings.modeBrowser') });
   const text = h('p', { class: 'muted', text: t('settings.storageUnknown') });
   const usage = h('p', { class: 'muted small' });
-  if (navigator.storage?.persisted) {
-    navigator.storage.persisted().then((p) => {
-      text.textContent = p ? t('settings.persisted') : t('settings.notPersisted');
-    });
-  }
+  const ask = h('button', { type: 'button', class: 'btn small', text: t('settings.persistAsk'), hidden: true });
+
+  const show = (persisted) => {
+    text.textContent = persisted ? t('settings.persisted') : t('settings.notPersisted');
+    ask.hidden = persisted || !navigator.storage?.persist;
+  };
+  ask.addEventListener('click', async () => {
+    ask.disabled = true;
+    const granted = await navigator.storage.persist().catch(() => false);
+    show(granted);
+    if (!granted) toast(t('settings.persistDenied'), { duration: 6000 });
+    ask.disabled = false;
+  });
+
+  if (navigator.storage?.persisted) navigator.storage.persisted().then(show);
   if (navigator.storage?.estimate) {
     navigator.storage.estimate().then(({ usage: u }) => {
       usage.textContent = t('settings.usage', { used: formatBytes(u) });
     });
   }
-  return h('section', { class: 'card' }, h('h2', { text: t('settings.storage') }), text, usage);
+  return h('section', { class: 'card' }, h('h2', { text: t('settings.storage') }), mode, text, ask, usage);
 }
 
 function aboutSection() {
