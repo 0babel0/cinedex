@@ -303,7 +303,7 @@ button.chip { cursor: pointer; min-height: 32px; }
 .detail-original { margin: 0; color: var(--muted); font-style: italic; }
 .detail-facts { margin: 0; color: var(--muted); font-size: .9rem; }
 .credit { margin: 0 0 6px; font-size: .92rem; }
-.overview { margin: 12px 0 20px; line-height: 1.6; }
+.overview { margin: 12px 0 20px; line-height: 1.6; text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
 
 .notice {
   margin: 0 0 16px; padding: 12px 14px; border-radius: 12px; font-size: .9rem;
@@ -439,12 +439,6 @@ select.field {
   .poster-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 20px 16px; }
 }
 
-.reminder {
-  display: block; margin: -4px 0 12px; padding: 10px 14px; border-radius: 12px;
-  font-size: .85rem; text-decoration: none; color: var(--text);
-  background: color-mix(in srgb, var(--warn) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent);
-}
 
 /* ---------- Entry editor ---------- */
 .watches { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
@@ -503,6 +497,42 @@ select.field {
 .hbar-track { height: 10px; border-radius: 5px; background: var(--surface-2); overflow: hidden; }
 .hbar { display: block; height: 100%; border-radius: 5px; background: var(--accent); transition: width .4s ease; }
 .hbar-value { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
+
+/* ---------- Sheets: people, score, share, autosave ---------- */
+.page-head .spacer { flex: 1; }
+.person-link { color: var(--text); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent) 60%, transparent); text-underline-offset: 3px; text-decoration-thickness: 1.5px; }
+.person-link:active { color: var(--accent); }
+.credit { line-height: 1.7; }
+.community { margin: 0; font-size: .9rem; display: flex; gap: 2px; align-items: baseline; }
+.community-score { font-weight: 700; color: var(--accent); }
+.save-state {
+  margin-right: 4px;
+  font-size: .8rem; color: var(--muted); opacity: 0; transition: opacity .2s ease;
+}
+.save-state.visible { opacity: 1; }
+.save-state[data-kind="ok"]::before { content: "✓ "; color: var(--ok); }
+.save-state[data-kind="error"] { color: var(--error); }
+
+/* Person page */
+.bio { line-height: 1.6; text-align: justify; hyphens: auto; -webkit-hyphens: auto; margin: 0 0 20px; cursor: pointer; }
+.bio.clamp { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+.credits h2 { font-size: 1.05rem; margin: 20px 0 4px; }
+
+/* Watchlist checkbox */
+.hint { margin: -4px 0 8px; }
+.check {
+  flex: none; display: grid; place-items: center;
+  width: var(--tap); height: var(--tap); margin-left: -6px;
+  background: none; border: 0; padding: 0; cursor: pointer; color: var(--muted);
+}
+.check svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.check path { stroke-dasharray: 16; stroke-dashoffset: 16; transition: stroke-dashoffset .25s ease .05s; }
+.check:hover { color: var(--accent); }
+.row-item.done .check { color: var(--accent); }
+.row-item.done .check circle { fill: color-mix(in srgb, var(--accent) 18%, transparent); }
+.row-item.done .check path { stroke-dashoffset: 0; }
+.row-item { transition: opacity .3s ease .15s; }
+.row-item.done { opacity: .45; }
 
 /* ---------- Toasts ---------- */
 .toasts {

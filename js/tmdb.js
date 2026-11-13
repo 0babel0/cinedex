@@ -81,13 +81,13 @@ export async function searchMulti(query, { language, signal } = {}) {
  * One request (credits + external ids appended); a second one only when the
  * localized synopsis is empty, to fall back to the English one.
  */
-export async function getDetails(type, tmdbId, { language, signal } = {}) {
+export async function getDetails(type, tmdbId, { language, signal, overviewFallback = true } = {}) {
   if (type !== 'movie' && type !== 'tv') throw new TmdbError('notfound', 404);
   const d = await tmdbFetch(`/${type}/${tmdbId}`,
     { language, append_to_response: 'credits,external_ids' }, { signal });
 
   let overview = (d.overview || '').trim();
-  if (!overview && language !== 'en-US') {
+  if (!overview && overviewFallback && language !== 'en-US') {
     try {
       const en = await tmdbFetch(`/${type}/${tmdbId}`, { language: 'en-US' }, { signal });
       overview = (en.overview || '').trim();
@@ -117,6 +117,16 @@ export async function getDetails(type, tmdbId, { language, signal } = {}) {
     overview,
     posterPath: d.poster_path || null,
     metaLang: language || 'fr-FR',
+    // Not stored in the diary (display only): people with TMDB ids, community score.
+    people: {
+      directors: movie
+        ? (d.credits?.crew || []).filter((c) => c.job === 'Director').map(person)
+        : (d.created_by || []).map(person),
+      cast: (d.credits?.cast || [])
+        .slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        .slice(0, 8).map(person),
+    },
+    vote: d.vote_count ? { average: d.vote_average, count: d.vote_count } : null,
   };
 }
 
@@ -143,6 +153,50 @@ export async function fetchPoster(path, { size = 'w342', signal } = {}) {
   const res = await fetch(posterUrl(path, size), { signal, referrerPolicy: 'no-referrer', credentials: 'omit' });
   if (!res.ok) throw new TmdbError('http', res.status);
   return res.blob();
+}
+
+const person = (p) => ({ id: p.id, name: p.name });
+
+/** A person and their movies / TV shows, newest first. Talk shows, news and reality TV are left out. */
+export async function getPerson(personId, { language, signal } = {}) {
+  const d = await tmdbFetch(`/person/${personId}`, { language, append_to_response: 'combined_credits' }, { signal });
+  const NOISE = new Set([10763, 10764, 10767]); // News, Reality, Talk
+  const CREW_JOBS = new Set(['Director', 'Creator', 'Screenplay', 'Writer', 'Novel', 'Story']);
+  const credit = (c) => ({
+    type: c.media_type,
+    tmdbId: c.id,
+    title: c.title ?? c.name ?? '',
+    originalTitle: c.original_title ?? c.original_name ?? '',
+    date: c.release_date || c.first_air_date || '',
+    year: yearOf(c.release_date || c.first_air_date),
+    posterPath: c.poster_path || null,
+    role: c.character || c.job || '',
+    votes: c.vote_count || 0,
+  });
+  const keep = (c) => (c.media_type === 'movie' || c.media_type === 'tv') && !(c.genre_ids || []).some((g) => NOISE.has(g));
+  // One row per title; several jobs on the same title are merged ("Director, Writer").
+  const group = (list) => {
+    const map = new Map();
+    for (const c of list) {
+      const key = `${c.type}:${c.tmdbId}`;
+      const prev = map.get(key);
+      if (!prev) map.set(key, { ...c });
+      else if (c.role && !prev.role.split(', ').includes(c.role)) prev.role = prev.role ? `${prev.role}, ${c.role}` : c.role;
+    }
+    // Upcoming / undated titles first, then newest first.
+    return [...map.values()].sort((a, b) => (b.date || '9999').localeCompare(a.date || '9999'));
+  };
+  return {
+    id: d.id,
+    name: d.name || '',
+    department: d.known_for_department || '',
+    biography: (d.biography || '').trim(),
+    birthday: d.birthday || null,
+    deathday: d.deathday || null,
+    profilePath: d.profile_path || null,
+    cast: group((d.combined_credits?.cast || []).filter(keep).map(credit)),
+    crew: group((d.combined_credits?.crew || []).filter((c) => keep(c) && CREW_JOBS.has(c.job)).map(credit)),
+  };
 }
 
 function yearOf(date) {
