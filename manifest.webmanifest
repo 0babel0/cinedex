@@ -3,7 +3,7 @@
   "short_name": "Cinedex",
   "description": "Your private movie & TV diary.",
   "id": "./",
-  "start_url": "./#/add",
+  "start_url": "./#/list",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

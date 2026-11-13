@@ -3,14 +3,14 @@ import { getSetting, setSetting } from '../settings.js';
 import { keyType, testKey } from '../tmdb.js';
 import { h, segmented, toast, formatBytes, isStandalone } from '../ui.js';
 import { APP_VERSION } from '../version.js';
+import { backLink } from '../nav.js';
 import { exportJson, exportCsv, shareOrDownload, markExported, importJson } from '../backup.js';
 import { fetchMissingPosters } from '../posters.js';
 
-export function render({ back = 'add' } = {}) {
+export function render({ back = 'list' } = {}) {
   return h('section', { class: 'page settings' },
     h('div', { class: 'page-head' },
-      h('a', { class: 'icon-btn', href: `#/${back}`, 'aria-label': t('nav.back'), title: t('nav.back'),
-        html: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>' }),
+      backLink(`#/${back}`),
       h('h1', { class: 'page-title', text: t('settings.title') }),
     ),
     keySection(),

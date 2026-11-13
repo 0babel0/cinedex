@@ -12,27 +12,39 @@ import * as listView from './views/list.js';
 import * as statsView from './views/stats.js';
 import * as settingsView from './views/settings.js';
 import * as itemView from './views/item.js';
+import * as personView from './views/person.js';
+import { trackHistory } from './nav.js';
 
 const TABS = { add: addView, list: listView, stats: statsView };
-const ROUTES = { ...TABS, settings: settingsView, item: itemView };
+const ROUTES = { ...TABS, settings: settingsView, item: itemView, person: personView };
+const HOME = 'list';
 
 const viewEl = document.getElementById('view');
-let lastTab = 'add';
+let lastTab = HOME;
 let currentPath = null;
 // Scroll position per path, so going back to a long list lands where you left it.
 const scrollMemory = new Map();
 let renderToken = 0;
 
-/** "#/add/movie/603" → { route: 'add', params: ['movie', '603'], path: 'add/movie/603' } */
+/**
+ * "#/add/movie/603?t=Matrix" →
+ * { route: 'add', params: ['movie', '603'], query: URLSearchParams, path: 'add/movie/603' }
+ */
 function parseRoute() {
-  const path = location.hash.replace(/^#\/?/, '').split('?')[0];
-  const [name, ...params] = path.split('/').filter(Boolean).map(decodeURIComponent);
-  const route = ROUTES[name] ? name : 'add';
-  return { route, params: ROUTES[name] ? params : [], path: [route, ...params].join('/') };
+  const [rawPath, rawQuery = ''] = location.hash.replace(/^#\/?/, '').split('?');
+  const [name, ...params] = rawPath.split('/').filter(Boolean).map(decodeURIComponent);
+  const route = ROUTES[name] ? name : HOME;
+  return {
+    route,
+    params: ROUTES[name] ? params : [],
+    query: new URLSearchParams(rawQuery),
+    path: [route, ...(ROUTES[name] ? params : [])].join('/'),
+  };
 }
 
 async function renderRoute({ force = false } = {}) {
-  const { route, params, path } = parseRoute();
+  trackHistory();
+  const { route, params, query, path } = parseRoute();
   if (path === currentPath && !force) return;
   const changed = path !== currentPath;
   if (currentPath) scrollMemory.set(currentPath, window.scrollY);
@@ -40,7 +52,7 @@ async function renderRoute({ force = false } = {}) {
   if (TABS[route]) lastTab = route;
 
   const token = ++renderToken;
-  const node = await ROUTES[route].render({ back: lastTab, params });
+  const node = await ROUTES[route].render({ back: lastTab, params, query });
   if (token !== renderToken) return; // a newer navigation won the race
   viewEl.replaceChildren(node);
   document.body.dataset.route = route;
