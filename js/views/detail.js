@@ -8,7 +8,7 @@ import { getDetails, fetchPoster, posterUrl } from '../tmdb.js';
 import { getItem, allTags, saveFromTmdb, today } from '../items.js';
 import { setPoster } from '../posters.js';
 import { h, toast } from '../ui.js';
-import { goBack } from '../nav.js';
+import { goBack, canGoBack } from '../nav.js';
 import { ratingInput, tagInput } from '../components.js';
 import { header, field, skeleton, seriesInputs, sheetHead } from './sheet.js';
 
@@ -118,7 +118,10 @@ function form(meta, knownTags, poster) {
       await saveFromTmdb(meta, collect(status), poster);
       if (poster) setPoster(meta.id, poster);
       toast(t(status === 'watchlist' ? 'detail.savedWatchlist' : 'detail.savedWatched', { title: meta.title }));
-      goBack('#/add');
+      // Opened from a search: back to it, to chain additions. Opened directly (shared link):
+      // go where the title now lives.
+      if (canGoBack()) goBack('#/add');
+      else location.replace(status === 'watchlist' ? '#/watchlist' : '#/list');
     } catch (err) {
       console.error(err);
       toast(t('detail.saveError'));
