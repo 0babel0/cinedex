@@ -151,6 +151,10 @@ body[data-route="settings"] #settings-btn { color: var(--accent); }
 /* ---------- Views ---------- */
 .view { outline: none; }
 .view.enter { animation: view-in .22s ease-out; }
+.view.enter-right { animation: view-from-right .22s ease-out; }
+.view.enter-left { animation: view-from-left .22s ease-out; }
+@keyframes view-from-right { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes view-from-left { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
 @keyframes view-in {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
@@ -585,10 +589,12 @@ body:has(.actions) .toasts { bottom: calc(var(--tabbar-h) + env(safe-area-inset-
   font-size: 2.6rem; line-height: 1.5; font-weight: 800; letter-spacing: -.02em; color: var(--text);
   animation: splash-title 1.2s ease forwards;
 }
-/* Logo starts centered on screen (half the title height lower), then makes room for the title.
+/* Logo starts where Android's launch screen draws the icon: centered on the whole screen,
+   status bar included (so ~12px above the center of the page), then makes room for the title.
+   Size and offset measured on a screen recording (Huawei P30, Android 10).
    The mark's own padding (same framing as the app icon) spaces it from the title. */
 @keyframes splash-logo {
-  0% { transform: translateY(25px); }
+  0% { transform: translateY(13px); }
   28%, 100% { transform: none; }
 }
 @keyframes splash-title {

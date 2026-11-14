@@ -19,6 +19,7 @@ import { trackHistory } from './nav.js';
 const TABS = { add: addView, list: listView, watchlist: watchlistView, stats: statsView };
 const ROUTES = { ...TABS, settings: settingsView, item: itemView, person: personView };
 const HOME = 'list';
+const TAB_ORDER = ['add', 'list', 'watchlist', 'stats']; // same order as the tab bar
 
 const viewEl = document.getElementById('view');
 let lastTab = HOME;
@@ -48,6 +49,10 @@ async function renderRoute({ force = false } = {}) {
   const { route, params, query, path } = parseRoute();
   if (path === currentPath && !force) return;
   const changed = path !== currentPath;
+  // Tab to tab (tap or swipe): slide in from the side of the new tab.
+  const prevTab = currentPath ? TAB_ORDER.indexOf(currentPath) : -1;
+  const nextTab = TAB_ORDER.indexOf(path);
+  const slide = prevTab >= 0 && nextTab >= 0 && prevTab !== nextTab ? (nextTab > prevTab ? 'enter-right' : 'enter-left') : 'enter';
   if (currentPath) scrollMemory.set(currentPath, window.scrollY);
   currentPath = path;
   if (TABS[route]) lastTab = route;
@@ -58,9 +63,9 @@ async function renderRoute({ force = false } = {}) {
   viewEl.replaceChildren(node);
   document.body.dataset.route = route;
   if (changed) {
-    viewEl.classList.remove('enter');
+    viewEl.classList.remove('enter', 'enter-left', 'enter-right');
     void viewEl.offsetWidth; // restart the enter animation
-    viewEl.classList.add('enter');
+    viewEl.classList.add(slide);
     // Tabs restore their scroll position; sheets always open at the top.
     window.scrollTo(0, TABS[route] && !params.length ? scrollMemory.get(path) || 0 : 0);
   }
@@ -70,6 +75,36 @@ async function renderRoute({ force = false } = {}) {
     else a.removeAttribute('aria-current');
   });
   document.title = TABS[route] || route === 'settings' ? `${t(`nav.${route}`)} · Cinedex` : 'Cinedex';
+}
+
+/**
+ * Horizontal swipe on a tab switches to the neighbouring tab. Ignored on sheets (title, person,
+ * settings), near the screen edges (Android back gesture), on controls that need horizontal
+ * moves (rating stars, inputs) and when the gesture is mostly vertical (scrolling).
+ */
+function enableTabSwipe() {
+  let start = null;
+  document.addEventListener('touchstart', (e) => {
+    const touch = e.touches[0];
+    const edge = 28;
+    start = e.touches.length === 1
+      && TAB_ORDER.includes(currentPath)
+      && touch.clientX > edge && touch.clientX < window.innerWidth - edge
+      && !e.target.closest('input, textarea, select, .stars, .filters, dialog, .toasts')
+      ? { x: touch.clientX, y: touch.clientY, t: Date.now() } : null;
+  }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    if (!start) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    const fast = Date.now() - start.t < 700;
+    start = null;
+    if (!fast || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
+    const next = TAB_ORDER[TAB_ORDER.indexOf(currentPath) + (dx < 0 ? 1 : -1)];
+    if (next) location.hash = `#/${next}`;
+  }, { passive: true });
+  document.addEventListener('touchcancel', () => { start = null; }, { passive: true });
 }
 
 function applyTheme() {
@@ -171,6 +206,7 @@ async function start() {
   if (share?.error) toast(shareErrorText(share.error), { duration: 5000 });
 
   watchConnectivity();
+  enableTabSwipe();
   requestPersistence();
   window.addEventListener('appinstalled', () => setTimeout(requestPersistence, 1000));
   registerServiceWorker();
