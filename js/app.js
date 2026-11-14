@@ -48,8 +48,15 @@ function parseRoute() {
 
 async function renderRoute({ force = false } = {}) {
   trackHistory();
+  // Safety net: no leftover swipe panel may ever cover the page.
+  document.querySelectorAll('.swipe-peer').forEach((n) => n.remove());
   const { route, params, query, path } = parseRoute();
-  if (path === currentPath && !force) return;
+  if (path === currentPath && !force) {
+    // Never leave the view shifted by a swipe, even when there is nothing to re-render.
+    viewEl.style.cssText = '';
+    adopted = null;
+    return;
+  }
   const changed = path !== currentPath;
   // Tab to tab (tap or swipe): slide in from the side of the new tab.
   const prevTab = currentPath ? TAB_ORDER.indexOf(currentPath) : -1;
@@ -112,11 +119,12 @@ function enableTabSwipe() {
     document.body.append(frame);
     const peer = { path, frame, node: null };
     const route = path;
-    ROUTES[route].render({ back: route, params: [], query: new URLSearchParams() }).then((node) => {
+    // render() may return a node or a promise (Add renders synchronously).
+    Promise.resolve(ROUTES[route].render({ back: route, params: [], query: new URLSearchParams() })).then((node) => {
       if (g.peer !== peer) return;
       peer.node = node;
       inner.append(node);
-    });
+    }).catch((err) => console.error('Swipe pre-render failed', err)); // release falls back to a normal render
     g.peer = peer;
   };
   const place = (g, dx) => {
@@ -126,7 +134,7 @@ function enableTabSwipe() {
 
   document.addEventListener('touchstart', (e) => {
     const p = e.touches[0];
-    if (s?.settling) return;
+    if (s?.settling) return; // previous swipe still landing
     s = e.touches.length === 1 && tabIndex() >= 0
       && p.clientX > EDGE && p.clientX < width() - EDGE
       && !e.target.closest('input, textarea, select, .stars, .filters, dialog, .toasts')
@@ -177,15 +185,14 @@ function enableTabSwipe() {
     setTimeout(() => {
       viewEl.classList.remove('dragging');
       if (go) {
-        const settle = () => {
-          adopted = { path: g.peer.path, node: g.peer.node };
-          location.hash = `#/${g.peer.path}`; // renderRoute adopts the node and clears the styles
-          removePeer(g);
-          s = null;
-        };
-        // The neighbour may still be loading its data: wait for it (it's quick, IndexedDB only).
-        const wait = () => (g.peer.node ? settle() : setTimeout(wait, 16));
-        wait();
+        const { path, node } = g.peer;
+        removePeer(g);
+        // Hand the pre-rendered page to the router (if it is ready) and navigate right away, so
+        // currentPath is up to date before the next gesture. The hashchange that follows finds
+        // the same path and does nothing. Gestures are ignored until this is done.
+        adopted = node && path !== currentPath ? { path, node } : null;
+        history.pushState(null, '', `#/${path}`);
+        renderRoute().finally(() => { viewEl.style.cssText = ''; s = null; });
       } else {
         viewEl.style.cssText = '';
         removePeer(g);
