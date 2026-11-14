@@ -17,6 +17,9 @@ A small, private, offline-first diary for the movies and TV shows you watch.
 
 ## Features
 
+Four tabs (Add · My list · Watchlist · Stats), switched from the bottom bar or by swiping left / right.
+Settings sit behind the gear icon.
+
 - **Add**: search movies and TV shows as you type (TMDB `search/multi`), open a detail sheet
   (poster, localized and original title, year, runtime or seasons, TMDB community score, genres,
   director or creators, main cast, synopsis with English fallback), then save it as **Watched** or **Watchlist**
@@ -70,6 +73,14 @@ Your data belongs to the browser you installed from: an entry added in Brave isn
 Use export / import to move it.
 
 Updates are automatic: when a new version is published, the app offers to reload.
+
+Notes on Android:
+
+- On launch, Android first shows its own screen (the app icon on the app's background color),
+  then Cinedex's splash continues from the same picture. The splash plays on cold starts only,
+  not when the app reloads; pull-to-refresh is disabled.
+- Some launchers (e.g. Huawei EMUI) put web app icons on their own white plate, which can leave a thin
+  light edge around the icon. Launchers that support adaptive icons use the maskable icon instead.
 
 ## Backup format
 
@@ -130,6 +141,9 @@ python3 -m http.server 8000
 - On each release, bump `CACHE_VERSION` in `sw.js` and `APP_VERSION` in `js/version.js`
   (and list any new file in `SHELL`).
 - A strict Content-Security-Policy in `index.html` only allows `api.themoviedb.org` and `image.tmdb.org`.
+- App icons: edit `icons/icon.svg` (full-bleed square on the manifest background color, mark inside the
+  maskable safe zone) and export the PNGs with a renderer that keeps transparency. `assets/mark.svg`
+  (same framing, no background) is the splash logo.
 
 Code map:
 
