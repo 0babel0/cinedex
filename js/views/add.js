@@ -95,7 +95,8 @@ export function render(ctx) {
     input, message, results,
   );
   // Focus once the view is attached (opens the keyboard: that's why you came here).
-  requestAnimationFrame(() => { if (!state.query) input.focus(); });
+  // Not when pre-rendered beside the current tab during a swipe (it would pop the keyboard).
+  requestAnimationFrame(() => { if (!state.query && page.closest('#view')) input.focus(); });
   return page;
 }
 

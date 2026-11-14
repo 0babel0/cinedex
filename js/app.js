@@ -27,6 +27,8 @@ let currentPath = null;
 // Scroll position per path, so going back to a long list lands where you left it.
 const scrollMemory = new Map();
 let renderToken = 0;
+// Page pre-rendered by a swipe, taken as-is by the next render of the same path.
+let adopted = null;
 
 /**
  * "#/add/movie/603?t=Matrix" →
@@ -58,12 +60,18 @@ async function renderRoute({ force = false } = {}) {
   if (TABS[route]) lastTab = route;
 
   const token = ++renderToken;
-  const node = await ROUTES[route].render({ back: lastTab, params, query });
+  const swiped = adopted?.path === path ? adopted : null;
+  adopted = null;
+  const node = swiped ? swiped.node : await ROUTES[route].render({ back: lastTab, params, query });
   if (token !== renderToken) return; // a newer navigation won the race
   viewEl.replaceChildren(node);
   viewEl.style.cssText = ''; // end of a swipe: drop the drag offset now that the new page is in
   document.body.dataset.route = route;
-  if (changed) {
+  if (swiped) {
+    // Already on screen at its place: no enter animation.
+    viewEl.classList.remove('enter', 'enter-left', 'enter-right');
+    window.scrollTo(0, scrollMemory.get(path) || 0);
+  } else if (changed) {
     viewEl.classList.remove('enter', 'enter-left', 'enter-right');
     void viewEl.offsetWidth; // restart the enter animation
     viewEl.classList.add(slide);
@@ -79,30 +87,54 @@ async function renderRoute({ force = false } = {}) {
 }
 
 /**
- * Swipe between tabs. The page follows the finger (with resistance on the first and last tab),
- * then either slides out and the neighbouring tab slides in, or snaps back.
- * Only on tabs (not sheets or settings), not from the screen edges (Android back gesture), not on
- * controls that need horizontal moves, and only once the gesture is clearly horizontal: vertical
- * scrolling stays native (`touch-action: pan-y` on the view).
+ * Swipe between tabs, carousel style: the neighbouring tab is rendered next to the current one
+ * and both follow the finger. On release the movement continues at the finger's speed (or snaps
+ * back), and the neighbour's already-rendered page is adopted by the router (no second render).
+ * Only on tabs, not from the screen edges (Android back gesture), not on controls that need
+ * horizontal moves, and only once the gesture is clearly horizontal; vertical scrolling stays
+ * native (`touch-action: pan-y` on the view).
  */
 function enableTabSwipe() {
   const EDGE = 24;
   let s = null;
+  const width = () => window.innerWidth;
   const tabIndex = () => TAB_ORDER.indexOf(currentPath);
-  const setStyle = (transform, opacity = '', transition = '') => {
-    Object.assign(viewEl.style, { transform, opacity, transition });
+
+  const removePeer = (g) => { g.peer?.frame.remove(); g.peer = null; };
+  const makePeer = (g, path) => {
+    removePeer(g);
+    const inner = document.createElement('div');
+    const frame = document.createElement('div');
+    frame.className = 'swipe-peer';
+    frame.append(inner);
+    // Same scroll offset the tab will get once shown.
+    inner.style.transform = `translateY(${-(scrollMemory.get(path) || 0)}px)`;
+    document.body.append(frame);
+    const peer = { path, frame, node: null };
+    const route = path;
+    ROUTES[route].render({ back: route, params: [], query: new URLSearchParams() }).then((node) => {
+      if (g.peer !== peer) return;
+      peer.node = node;
+      inner.append(node);
+    });
+    g.peer = peer;
+  };
+  const place = (g, dx) => {
+    viewEl.style.transform = `translateX(${dx}px)`;
+    if (g.peer) g.peer.frame.style.transform = `translateX(${dx + (dx < 0 ? width() : -width())}px)`;
   };
 
   document.addEventListener('touchstart', (e) => {
     const p = e.touches[0];
+    if (s?.settling) return;
     s = e.touches.length === 1 && tabIndex() >= 0
-      && p.clientX > EDGE && p.clientX < window.innerWidth - EDGE
+      && p.clientX > EDGE && p.clientX < width() - EDGE
       && !e.target.closest('input, textarea, select, .stars, .filters, dialog, .toasts')
-      ? { x: p.clientX, y: p.clientY, t: Date.now(), lock: null, dx: 0 } : null;
+      ? { x: p.clientX, y: p.clientY, lock: null, dx: 0, samples: [], peer: null } : null;
   }, { passive: true });
 
   document.addEventListener('touchmove', (e) => {
-    if (!s) return;
+    if (!s || s.settling) return;
     const p = e.touches[0];
     const dx = p.clientX - s.x;
     const dy = p.clientY - s.y;
@@ -113,27 +145,53 @@ function enableTabSwipe() {
       viewEl.classList.remove('enter', 'enter-left', 'enter-right');
       viewEl.classList.add('dragging');
     }
-    const i = tabIndex();
-    const hasNeighbour = dx < 0 ? i < TAB_ORDER.length - 1 : i > 0;
-    s.dx = hasNeighbour ? dx : dx / 4; // rubber band at the ends
-    setStyle(`translateX(${s.dx}px)`);
+    const next = TAB_ORDER[tabIndex() + (dx < 0 ? 1 : -1)];
+    if (next && s.peer?.path !== next) makePeer(s, next);
+    if (!next && s.peer) removePeer(s);
+    s.dx = next ? dx : dx / 4; // rubber band on the first / last tab
+    s.samples.push({ x: p.clientX, t: performance.now() });
+    if (s.samples.length > 6) s.samples.shift();
+    place(s, s.dx);
   }, { passive: true });
 
   const finish = (cancelled) => {
-    if (!s) return;
-    const { dx, t } = s;
-    s = null;
-    viewEl.classList.remove('dragging');
-    const next = TAB_ORDER[tabIndex() + (dx < 0 ? 1 : -1)];
-    const speed = Math.abs(dx) / Math.max(1, Date.now() - t); // px/ms
-    const go = !cancelled && next && (Math.abs(dx) > window.innerWidth * 0.3 || (speed > 0.45 && Math.abs(dx) > 40));
-    if (go) {
-      setStyle(`translateX(${dx < 0 ? -40 : 40}%)`, '0', 'transform .16s ease-in, opacity .16s ease-in');
-      setTimeout(() => { location.hash = `#/${next}`; }, 160); // renderRoute clears the inline styles
-    } else {
-      setStyle('', '', 'transform .2s ease-out');
-      setTimeout(() => { if (!viewEl.classList.contains('dragging')) viewEl.style.transition = ''; }, 200);
-    }
+    if (!s || s.settling) return;
+    if (s.lock !== 'h') { s = null; return; }
+    const g = s;
+    g.settling = true;
+    const first = g.samples[0];
+    const last = g.samples[g.samples.length - 1];
+    const v = first && last && last.t > first.t ? (last.x - first.x) / (last.t - first.t) : 0; // px/ms
+    const dir = g.dx < 0 ? -1 : 1;
+    const flick = Math.abs(v) > 0.35 && Math.sign(v) === dir;
+    const go = !cancelled && g.peer && (Math.abs(g.dx) > width() * 0.35 || flick);
+    const target = go ? dir * width() : 0;
+    // Keep the finger's speed: duration from the remaining distance, within sensible bounds.
+    const remaining = Math.abs(target - g.dx);
+    const duration = Math.round(Math.min(320, Math.max(140, remaining / Math.max(Math.abs(v), 1.4))));
+    const ease = `transform ${duration}ms cubic-bezier(.25, .8, .25, 1)`;
+    viewEl.style.transition = ease;
+    if (g.peer) g.peer.frame.style.transition = ease;
+    requestAnimationFrame(() => place(g, target));
+
+    setTimeout(() => {
+      viewEl.classList.remove('dragging');
+      if (go) {
+        const settle = () => {
+          adopted = { path: g.peer.path, node: g.peer.node };
+          location.hash = `#/${g.peer.path}`; // renderRoute adopts the node and clears the styles
+          removePeer(g);
+          s = null;
+        };
+        // The neighbour may still be loading its data: wait for it (it's quick, IndexedDB only).
+        const wait = () => (g.peer.node ? settle() : setTimeout(wait, 16));
+        wait();
+      } else {
+        viewEl.style.cssText = '';
+        removePeer(g);
+        s = null;
+      }
+    }, duration);
   };
   document.addEventListener('touchend', () => finish(false), { passive: true });
   document.addEventListener('touchcancel', () => finish(true), { passive: true });
