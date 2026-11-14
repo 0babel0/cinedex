@@ -61,6 +61,7 @@ async function renderRoute({ force = false } = {}) {
   const node = await ROUTES[route].render({ back: lastTab, params, query });
   if (token !== renderToken) return; // a newer navigation won the race
   viewEl.replaceChildren(node);
+  viewEl.style.cssText = ''; // end of a swipe: drop the drag offset now that the new page is in
   document.body.dataset.route = route;
   if (changed) {
     viewEl.classList.remove('enter', 'enter-left', 'enter-right');
@@ -78,33 +79,64 @@ async function renderRoute({ force = false } = {}) {
 }
 
 /**
- * Horizontal swipe on a tab switches to the neighbouring tab. Ignored on sheets (title, person,
- * settings), near the screen edges (Android back gesture), on controls that need horizontal
- * moves (rating stars, inputs) and when the gesture is mostly vertical (scrolling).
+ * Swipe between tabs. The page follows the finger (with resistance on the first and last tab),
+ * then either slides out and the neighbouring tab slides in, or snaps back.
+ * Only on tabs (not sheets or settings), not from the screen edges (Android back gesture), not on
+ * controls that need horizontal moves, and only once the gesture is clearly horizontal: vertical
+ * scrolling stays native (`touch-action: pan-y` on the view).
  */
 function enableTabSwipe() {
-  let start = null;
+  const EDGE = 24;
+  let s = null;
+  const tabIndex = () => TAB_ORDER.indexOf(currentPath);
+  const setStyle = (transform, opacity = '', transition = '') => {
+    Object.assign(viewEl.style, { transform, opacity, transition });
+  };
+
   document.addEventListener('touchstart', (e) => {
-    const touch = e.touches[0];
-    const edge = 28;
-    start = e.touches.length === 1
-      && TAB_ORDER.includes(currentPath)
-      && touch.clientX > edge && touch.clientX < window.innerWidth - edge
+    const p = e.touches[0];
+    s = e.touches.length === 1 && tabIndex() >= 0
+      && p.clientX > EDGE && p.clientX < window.innerWidth - EDGE
       && !e.target.closest('input, textarea, select, .stars, .filters, dialog, .toasts')
-      ? { x: touch.clientX, y: touch.clientY, t: Date.now() } : null;
+      ? { x: p.clientX, y: p.clientY, t: Date.now(), lock: null, dx: 0 } : null;
   }, { passive: true });
-  document.addEventListener('touchend', (e) => {
-    if (!start) return;
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - start.x;
-    const dy = touch.clientY - start.y;
-    const fast = Date.now() - start.t < 700;
-    start = null;
-    if (!fast || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
-    const next = TAB_ORDER[TAB_ORDER.indexOf(currentPath) + (dx < 0 ? 1 : -1)];
-    if (next) location.hash = `#/${next}`;
+
+  document.addEventListener('touchmove', (e) => {
+    if (!s) return;
+    const p = e.touches[0];
+    const dx = p.clientX - s.x;
+    const dy = p.clientY - s.y;
+    if (!s.lock) {
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+      s.lock = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'h' : 'v';
+      if (s.lock === 'v') { s = null; return; }
+      viewEl.classList.remove('enter', 'enter-left', 'enter-right');
+      viewEl.classList.add('dragging');
+    }
+    const i = tabIndex();
+    const hasNeighbour = dx < 0 ? i < TAB_ORDER.length - 1 : i > 0;
+    s.dx = hasNeighbour ? dx : dx / 4; // rubber band at the ends
+    setStyle(`translateX(${s.dx}px)`);
   }, { passive: true });
-  document.addEventListener('touchcancel', () => { start = null; }, { passive: true });
+
+  const finish = (cancelled) => {
+    if (!s) return;
+    const { dx, t } = s;
+    s = null;
+    viewEl.classList.remove('dragging');
+    const next = TAB_ORDER[tabIndex() + (dx < 0 ? 1 : -1)];
+    const speed = Math.abs(dx) / Math.max(1, Date.now() - t); // px/ms
+    const go = !cancelled && next && (Math.abs(dx) > window.innerWidth * 0.3 || (speed > 0.45 && Math.abs(dx) > 40));
+    if (go) {
+      setStyle(`translateX(${dx < 0 ? -40 : 40}%)`, '0', 'transform .16s ease-in, opacity .16s ease-in');
+      setTimeout(() => { location.hash = `#/${next}`; }, 160); // renderRoute clears the inline styles
+    } else {
+      setStyle('', '', 'transform .2s ease-out');
+      setTimeout(() => { if (!viewEl.classList.contains('dragging')) viewEl.style.transition = ''; }, 200);
+    }
+  };
+  document.addEventListener('touchend', () => finish(false), { passive: true });
+  document.addEventListener('touchcancel', () => finish(true), { passive: true });
 }
 
 function applyTheme() {

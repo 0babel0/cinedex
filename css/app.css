@@ -60,7 +60,12 @@
 [hidden] { display: none !important; }
 
 /* overscroll-behavior: no pull-to-refresh in Chrome (it reloaded the app and replayed the splash). */
-html, body { overscroll-behavior-y: none; }
+html, body { overscroll-behavior-y: none; overflow-x: clip; }
+/* App feel on touch screens: no scrollbars flashing during swipes and programmatic scrolls. */
+@media (pointer: coarse) {
+  html { scrollbar-width: none; }
+  html::-webkit-scrollbar { display: none; }
+}
 html { -webkit-text-size-adjust: 100%; }
 /* Reload within the same session (update, manual refresh): no splash, see boot.js. */
 .no-splash .splash { display: none; }
@@ -149,12 +154,17 @@ body[data-route="settings"] #settings-btn { color: var(--accent); }
 .tabbar svg { transition: transform .15s ease; }
 
 /* ---------- Views ---------- */
-.view { outline: none; }
+.view {
+  outline: none;
+  /* Horizontal gestures belong to the tab swipe; vertical scrolling and zoom stay native. */
+  touch-action: pan-y pinch-zoom;
+}
+.view.dragging { will-change: transform; }
 .view.enter { animation: view-in .22s ease-out; }
-.view.enter-right { animation: view-from-right .22s ease-out; }
-.view.enter-left { animation: view-from-left .22s ease-out; }
-@keyframes view-from-right { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
-@keyframes view-from-left { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+.view.enter-right { animation: view-from-right .2s cubic-bezier(.2, .7, .3, 1); }
+.view.enter-left { animation: view-from-left .2s cubic-bezier(.2, .7, .3, 1); }
+@keyframes view-from-right { from { opacity: 0; transform: translateX(40%); } to { opacity: 1; transform: none; } }
+@keyframes view-from-left { from { opacity: 0; transform: translateX(-40%); } to { opacity: 1; transform: none; } }
 @keyframes view-in {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
