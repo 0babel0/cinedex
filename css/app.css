@@ -98,7 +98,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
   height: calc(var(--topbar-h) + env(safe-area-inset-top));
   padding: env(safe-area-inset-top) 8px 0 16px;
   display: flex; align-items: center; gap: 12px;
-  background: var(--bg);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
 .brand {
@@ -135,7 +137,9 @@ body[data-route="settings"] #settings-btn { color: var(--accent); }
   height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   display: grid; grid-template-columns: repeat(4, 1fr);
-  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-top: 1px solid var(--border);
 }
 .tabbar a {
@@ -345,7 +349,9 @@ input[type="date"].field { max-width: 220px; }
   bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 8px);
   display: flex; gap: 10px; justify-content: flex-end;
   margin-top: 16px; padding: 10px; border-radius: 16px;
-  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border); box-shadow: var(--shadow);
 }
 .actions .btn { flex: 1; max-width: 200px; }
@@ -443,6 +449,7 @@ select.field {
   position: absolute; font-size: .72rem; font-weight: 700;
   padding: 2px 7px; border-radius: 999px;
   background: rgb(10 8 14 / .78); color: #fff;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
 }
 .poster-rating { left: 6px; bottom: 6px; color: #f4b740; }
 .poster-type { right: 6px; top: 6px; color: #7cc4ff; }
